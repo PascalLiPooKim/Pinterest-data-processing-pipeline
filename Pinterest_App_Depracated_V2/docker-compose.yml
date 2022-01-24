@@ -1,0 +1,20 @@
+version : "2.2"
+services:
+  project_pin_api:
+    network_mode: host
+    image : verc112/pinterest_api
+    restart : always
+    volumes :
+      - ./:/Pinterest_App/
+    ports:
+      - "5004:80"
+      
+  project_user_emulation:
+    network_mode: host
+    image: verc112/pinterest_user_emulation
+    restart : always
+    ports:
+    - "5003:80"
+    depends_on:
+      - project_pin_api  
+
