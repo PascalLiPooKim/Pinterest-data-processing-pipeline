@@ -7,7 +7,7 @@ import findspark
 
 if __name__ == '__main__':
 
-    # os.environ['JAVA_HOME'] = '/usr/lib/jvm/java-8-openjdk-amd64'
+    os.environ['JAVA_HOME'] = '/usr/lib/jvm/java-8-openjdk-amd64'
     # os.environ['PYSPARK_SUBMIT_ARGS'] = "--master mymaster --total-executor 2 --conf spark.driver.extraJavaOptions=-Dhttp.proxyHost=proxy.mycorp.com-Dhttp.proxyPort=1234 -Dhttp.nonProxyHosts=localhost|.mycorp.com|127.0.0.1 -Dhttps.proxyHost=proxy.mycorp.com -Dhttps.proxyPort=1234 -Dhttps.nonProxyHosts=localhost|.mycorp.com|127.0.0.1 pyspark-shell"
     
 
@@ -38,12 +38,12 @@ if __name__ == '__main__':
     # Listing all of them in string readable format
     print(cfg.toDebugString())
 
-    # spark = pyspark.sql.SparkSession.builder.config(conf=cfg).getOrCreate()
-    spark = pyspark.sql.SparkSession.builder.config(
-    conf=pyspark.SparkConf()
-    .setMaster(f"local[{multiprocessing.cpu_count()}]")
-    .setAppName("PinterestApp")
-    ).getOrCreate()
+    spark = pyspark.sql.SparkSession.builder.config(conf=cfg).getOrCreate()
+    # spark = pyspark.sql.SparkSession.builder.config(
+    # conf=pyspark.SparkConf()
+    # .setMaster(f"local[{multiprocessing.cpu_count()}]")
+    # .setAppName("PinterestApp")
+    # ).getOrCreate()
 
     # spark = pyspark.sql.SparkSession.builder.config().getOrCreate()
 
