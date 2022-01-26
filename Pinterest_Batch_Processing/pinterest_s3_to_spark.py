@@ -50,8 +50,8 @@ if __name__ == '__main__':
     #         .load('pinterest_data_temp.json')
 
     # df.show()
-    if not os.path.exists('pinterest_data_pipeline'):
-        os.makedirs('pinterest_data_pipeline')
+    # if not os.path.exists('pinterest_data_pipeline'):
+    #     os.makedirs('pinterest_data_pipeline')
 
     
     # s3.download_file('s3-and-boto3', 'pinterest_data_pipeline/pinterest_data_0.json', 
@@ -61,26 +61,41 @@ if __name__ == '__main__':
 
     # df = sqlContext.read.option("multiline", "true").json('pinterest_data_0.json')
     # os.remove('pinterest_data_0.json')
-
-    # df = spark.createDataFrame([], df.schema)
+    # schema = ['category', 'index', 'unique_id', 'title', 'description', 
+    #         'follower_count', 'tag_list', 'is_image_or_video', 'image_src', 
+    #         'downloaded', 'save_location']
+    # df = spark.createDataFrame([], schema=schema)
     # df = df.persist()
+    first_time = True
     for file in bucket.objects.filter(Prefix='pinterest_data_pipeline'):
-        s3.download_file('s3-and-boto3', file.key, 
-        file.key)
+        # s3.download_file('s3-and-boto3', file.key, 
+        # file.key)
+        # response = s3.get_object(Bucket='s3-and-boto3', Key=file.key)
         # df = df.union(sqlContext.read.option("multiline", "true").json(file.key))
         # os.remove(file.key)
+        # print(response['Body'])
+        body = file.get()['Body'].read()
+        dict_str = body.decode('utf-8')
+        dict_data = eval(dict_str)
+        print(dict_data)
+
+        if first_time:
+            df = spark.createDataFrame([list(dict_data.values())], list(dict_data.keys()))
+            first_time = False
+        else:
+            df = df.union(spark.createDataFrame([list(dict_data.values())], list(dict_data.keys())))
+
 
     # df.createOrReplaceTempView("table")
     # spark.sql("REFRESH TABLE table")
-
-    # df_copy = df
-    df = sqlContext.read.option("multiline", "true").json('pinterest_data_pipeline/*.json')
-    # schema = df.schema
-    # print (schema)
+    # # df_copy = df
+    # df = sqlContext.read.option("multiline", "true").json('pinterest_data_pipeline/*.json')
+    # # schema = df.schema
+    # # print (schema)
     df.printSchema()
-    # df.show(False)
-    # df = sqlContext.read.schema(schema).json('pinterest_data_temp.json')
-    # os.remove('pinterest_data_temp.json')
+    # # df.show(False)
+    # # df = sqlContext.read.schema(schema).json('pinterest_data_temp.json')
+    # # os.remove('pinterest_data_temp.json')
     # df.show()
 
     df.select('category', 'title', 'unique_id').show()
