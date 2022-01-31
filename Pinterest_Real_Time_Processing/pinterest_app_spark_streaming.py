@@ -13,8 +13,9 @@ if __name__ == '__main__':
 
     spark_version = '3.2.0'
     client_version = '3.0.0'
-    os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.13:{0}, \
-        org.apache.kafka:kafka-clients:{1}'.format(spark_version, client_version)
+    # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.13:{0}, \
+    #     org.apache.kafka:kafka-clients:{1}'.format(spark_version, client_version)
+    os.environ['SPARK_HOME'] = "/opt/spark/spark-3.2.0-bin-hadoop3.2"
 
     SPARK_HOME = findspark.find()
     findspark.init(SPARK_HOME)
@@ -49,11 +50,11 @@ if __name__ == '__main__':
 
 
 
-    # df = spark \
-    # .readStream \
-    # .format("kafka") \
-    # .option("kafka.bootstrap.servers", "'localhost:9092'") \
-    # .option("subscribe", "ApiToKafkaTopic") \
-    # .load()
-    # df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-    # df.show()
+    df = spark \
+    .readStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", "'localhost:9092'") \
+    .option("subscribe", "ApiToKafkaTopic") \
+    .load()
+    df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+    df.show()

@@ -3,7 +3,7 @@ import pyspark
 import findspark
 import multiprocessing
 import json
-from pyspark.sql import SQLContext
+from pyspark.sql import SQLContext, functions
 import os
 from pyspark.sql.types import StructType, StructField, StringType
 
@@ -98,6 +98,26 @@ if __name__ == '__main__':
     # # os.remove('pinterest_data_temp.json')
     # df.show()
 
-    df.select('category', 'title', 'unique_id').show()
+    df = df.select('unique_id', 'category', 'title', 'follower_count').sort('category')
+    df.show()
+
+
+    catalog = ''.join("""{
+    "table":{"namespace":"default", "name":"pinteresttable"},
+    "rowkey":"key",
+    "columns":{
+        "col0":{"cf":"rowkey", "col":"unique_id", "type":"string"},
+        "col1":{"cf":"cf", "col":"category", "type":"string"},
+        "col2":{"cf":"cf", "col":"title", "type":"string"},
+        "col3":{"cf":"cf", "col":"follower_count", "type":"string"}
+    }
+    }""".split())
+
+    df.write\
+    .options(catalog=catalog)\
+    .format("org.apache.spark.sql.execution.datasources.hbase")\
+    .save()
+
+    # spark-submit --packages com.hortonworks:shc:1.0.0-1.6-s_2.10 --repositories http://repo.hortonworks.com/content/groups/public/ --files /home/aicore/hbase-2.4.9/conf/hbase-site.xml pinterest_s3_to_spark.py
 
     spark.stop()

@@ -15,6 +15,7 @@ if __name__ == '__main__':
     consumer = KafkaConsumer(config['Topic_name'], 
                             auto_offset_reset='earliest', 
                             fetch_min_bytes=256)
+                            
     s3_client = boto3.client('s3')
     # temp_file = tempfile.TemporaryFile()
     temp_file = pathlib.Path(config['Temporary_JSON_file'])
