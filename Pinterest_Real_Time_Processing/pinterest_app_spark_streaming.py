@@ -7,15 +7,15 @@ import findspark
 
 if __name__ == '__main__':
 
-    os.environ['JAVA_HOME'] = '/usr/lib/jvm/java-8-openjdk-amd64'
+    # os.environ['JAVA_HOME'] = '/usr/lib/jvm/java-8-openjdk-amd64'
     # os.environ['PYSPARK_SUBMIT_ARGS'] = "--master mymaster --total-executor 2 --conf spark.driver.extraJavaOptions=-Dhttp.proxyHost=proxy.mycorp.com-Dhttp.proxyPort=1234 -Dhttp.nonProxyHosts=localhost|.mycorp.com|127.0.0.1 -Dhttps.proxyHost=proxy.mycorp.com -Dhttps.proxyPort=1234 -Dhttps.nonProxyHosts=localhost|.mycorp.com|127.0.0.1 pyspark-shell"
     
 
-    spark_version = '3.2.0'
+    spark_version = '3.2.1'
     client_version = '3.0.0'
-    # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.13:{0}, \
-    #     org.apache.kafka:kafka-clients:{1}'.format(spark_version, client_version)
-    os.environ['SPARK_HOME'] = "/opt/spark/spark-3.2.0-bin-hadoop3.2"
+    os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.13:{0}, \
+        org.apache.kafka:kafka-clients:{1}'.format(spark_version, client_version)
+    # os.environ['SPARK_HOME'] = "/opt/spark/spark-3.2.0-bin-hadoop3.2"
 
     SPARK_HOME = findspark.find()
     findspark.init(SPARK_HOME)
@@ -39,12 +39,12 @@ if __name__ == '__main__':
     # Listing all of them in string readable format
     print(cfg.toDebugString())
 
-    spark = pyspark.sql.SparkSession.builder.config(conf=cfg).getOrCreate()
-    # spark = pyspark.sql.SparkSession.builder.config(
-    # conf=pyspark.SparkConf()
-    # .setMaster(f"local[{multiprocessing.cpu_count()}]")
-    # .setAppName("PinterestApp")
-    # ).getOrCreate()
+    # spark = pyspark.sql.SparkSession.builder.config(conf=cfg).getOrCreate()
+    spark = pyspark.sql.SparkSession.builder.config(
+    conf=pyspark.SparkConf()
+    .setMaster(f"local[{multiprocessing.cpu_count()}]")
+    .setAppName("PinterestApp")
+    ).getOrCreate()
 
     # spark = pyspark.sql.SparkSession.builder.config().getOrCreate()
 
@@ -58,3 +58,6 @@ if __name__ == '__main__':
     .load()
     df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
     df.show()
+
+
+    # spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.13:3.2.1 org.apache.kafka:kafka-clients:3.0.0 pinterest_app_spark_streaming.py
