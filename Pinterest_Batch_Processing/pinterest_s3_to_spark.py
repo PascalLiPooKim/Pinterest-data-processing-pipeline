@@ -6,9 +6,16 @@ import json
 from pyspark.sql import SQLContext, functions
 import os
 from pyspark.sql.types import StructType, StructField, StringType
+import configparser
+
+config = configparser.ConfigParser()
+config_path = "~/AiCore/Pinterest-data-processing-pipeline/Pinterest_Batch_Processing/configurations.ini"
+config.read(os.path.expanduser(config_path))
+pin_data_dir = config.get('default', "pin_data_s3_dir")
+bucket_name = config.get('default', "aws_s3_bucket")
 
 
-def create_df(bucket_name='s3-and-boto3', folder_name='pinterest_data_pipeline'):
+def create_df(bucket_name=bucket_name, folder_name=pin_data_dir):
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(bucket_name)
 
@@ -40,7 +47,7 @@ def create_df(bucket_name='s3-and-boto3', folder_name='pinterest_data_pipeline')
     spark = pyspark.sql.SparkSession.builder.config(conf=cfg).getOrCreate()
 
     first_time = True
-    for file in bucket.objects.filter(Prefix='pinterest_data_pipeline'):
+    for file in bucket.objects.filter(Prefix=pin_data_dir):
         
         body = file.get()['Body'].read()
         dict_str = body.decode('utf-8')

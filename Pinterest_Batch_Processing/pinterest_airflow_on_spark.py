@@ -61,4 +61,4 @@ if __name__ == "__main__":
         # python_callable=choose_best_model
         # )
 
-        cretae_df_task >> write_df_to_hbase >> delete_s3_files_task
+        create_spark_df >> write_df_to_hbase >> delete_s3_files
