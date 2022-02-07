@@ -45,7 +45,8 @@ def write_df_to_hbase(df):
     
 
 if __name__ == '__main__':
-    os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.hortonworks:shc-core:1.1.1-2.1-s_2.11 --repositories http://repo.hortonworks.com/content/groups/public/'
+    os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.hortonworks:shc-core:1.1.1-2.1-s_2.11 \
+        --repositories http://repo.hortonworks.com/content/groups/public/'
     spark, df = create_df()
     write_df_to_hbase(df)
     spark.stop()
