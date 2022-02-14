@@ -33,9 +33,10 @@ if __name__ == "__main__":
 
 
         create_spark_df = '/home/aicore/AiCore/Pinterest-data-processing-pipeline/Pinterest_Batch_Processing/pinterest_s3_to_spark.py'  
-        df_create_command = f'spark-submit --packages com.hortonworks:shc:1.0.0-1.6-s_2.10 \
-        --repositories http://repo.hortonworks.com/content/groups/public/ \
-        --files {hbase_site} {create_spark_df}'
+        # df_create_command = f'spark-submit --packages com.hortonworks:shc:1.0.0-1.6-s_2.10 \
+        # --repositories http://repo.hortonworks.com/content/groups/public/ \
+        # --files {hbase_site} {create_spark_df}'
+        df_create_command = f'spark-submit {create_spark_df}'
         cretae_df_task = BashOperator(
         task_id='create_spark_df',
         bash_command=df_create_command,

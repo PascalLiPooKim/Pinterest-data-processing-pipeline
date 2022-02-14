@@ -7,6 +7,7 @@ from pyspark.sql import SQLContext, functions
 import os
 from pyspark.sql.types import StructType, StructField, StringType
 import configparser
+import sys
 
 config = configparser.ConfigParser()
 config_path = "~/AiCore/Pinterest-data-processing-pipeline/Pinterest_Batch_Processing/configurations.ini"
@@ -14,13 +15,21 @@ config.read(os.path.expanduser(config_path))
 pin_data_dir = config.get('default', "pin_data_s3_dir")
 bucket_name = config.get('default', "aws_s3_bucket")
 
+# try:
+#     scala_version = '2.12'
+#     apache_version = '3.2.1'
+    # os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_{0}:{1}, \
+    #     pinterest_s3_to_spark.py pyspark-shell'.format(scala_version, apache_version)
+# except:
+#     print("Packages not required or already downloaded")
+
 
 def create_df(bucket_name=bucket_name, folder_name=pin_data_dir):
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(bucket_name)
 
-    for file in bucket.objects.filter(Prefix=folder_name):
-        print(file.key)
+    # for file in bucket.objects.filter(Prefix=folder_name):
+    #     print(file.key)
 
     s3 = boto3.client('s3')
 
@@ -28,7 +37,7 @@ def create_df(bucket_name=bucket_name, folder_name=pin_data_dir):
     cfg = (
         pyspark.SparkConf()
         # Setting where master node is located [cores for multiprocessing]
-        .setMaster(f"local[{multiprocessing.cpu_count()}]")
+        # .setMaster(f"local[{multiprocessing.cpu_count()}]")
         # Setting application name
         .setAppName("PinterestAppAmazonS3ToSpark")
         # Setting config value via string
@@ -47,12 +56,12 @@ def create_df(bucket_name=bucket_name, folder_name=pin_data_dir):
     spark = pyspark.sql.SparkSession.builder.config(conf=cfg).getOrCreate()
 
     first_time = True
-    for file in bucket.objects.filter(Prefix=pin_data_dir):
-        
+    for i, file in enumerate(bucket.objects.filter(Prefix=folder_name)):
+        print(file.key)
         body = file.get()['Body'].read()
         dict_str = body.decode('utf-8')
         dict_data = eval(dict_str)
-        print(dict_data)
+        # print(dict_data)
 
         if first_time:
             df = spark.createDataFrame([list(dict_data.values())], list(dict_data.keys()))
@@ -60,10 +69,14 @@ def create_df(bucket_name=bucket_name, folder_name=pin_data_dir):
         else:
             df = df.union(spark.createDataFrame([list(dict_data.values())], list(dict_data.keys())))
 
+        if i == 99:
+            break
     df.printSchema()
 
     df = df.select('unique_id', 'category', 'title', 'follower_count').sort('category')
     df.show()
+
+    print('Done')
 
     return spark, df
 
@@ -193,4 +206,7 @@ if __name__ == '__main__':
     # spark.stop()
 
     spark, _ = create_df()
+    print('Done 2')
     spark.stop()
+    print('Done 3')
+    # sys.exit()
