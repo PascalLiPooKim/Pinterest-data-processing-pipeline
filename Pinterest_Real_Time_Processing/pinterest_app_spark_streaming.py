@@ -1,10 +1,13 @@
 import multiprocessing
 from time import sleep
+from unicodedata import category
+from xml.dom.minicompat import StringTypes
 import pyspark
 import os
 import findspark
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
+from itertools import chain
 
 
 
@@ -92,8 +95,46 @@ if __name__ == '__main__':
     # df = df.select("value")
     df = df.withColumn("converted_value", 
     col('value').cast("string"))
-    # df = df.select("converted_value")
+    df = df.select("converted_value")
+    # df = df.withColumn('category', lit(None).cast(StringType()))
+    # df = df.rdd.map(lambda x: (x.converted_value, 
+    # x['category'])) \
+    # .toDF(["converted_value", 'category'])
+    print(df.converted_value)
+    # print(split(df.converted_value, ':'))
+    # sleep(5)
+    # df = df.withColumn('category', create_map([lit(x) for x in chain(*df['converted_value'].items())]))
+    # df.printSchema()
+    cols = [
+        'is_image_or_video', 
+        'save_location',
+        'unique_id',
+        'tag_list',
+        'description',
+        'index',
+        'title',
+        'category',
+        'downloaded',
+        'image_src',
+        'follower_count']
+    def convertToDict(str, col):
+        return eval(str)[col]
+
+    def splitUDF(col):
+        return udf(lambda x: convertToDict(x, col), StringType())
+    # schema = StructType([StructField('data', MapType(StringType(), StringType()))])
+    # df = df.withColumn('category', from_json(df.converted_value, schema))
+    for i in range(len(cols)):
+        df = df.withColumn(cols[i], splitUDF(cols[i])(col('converted_value')))
+    df = df.select('category', 'unique_id', 'description')
     query = df.writeStream.format("console").option("truncate", 'true').start()
+
+    # def func1(row):
+    #     print(row)
+    #     return row['converted_value'].split(':')
+
+
+    # query = df.writeStream.foreach(func1).format("console").option("truncate", 'true').start()
     query.awaitTermination(5)
 
     # spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.13:3.2.1 org.apache.kafka:kafka-clients:3.0.0 pinterest_app_spark_streaming.py
