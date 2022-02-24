@@ -8,6 +8,7 @@ import findspark
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
 from itertools import chain
+import configparser
 
 
 
@@ -130,13 +131,49 @@ if __name__ == '__main__':
     for i in range(len(cols)):
         df = df.withColumn(cols[i], splitUDF(cols[i])(col('converted_value')))
     df = df.select('index', 'category', 'unique_id', 'description')
-    query = df.writeStream.format("console").option("truncate", 'true').start()
+    # query = df.writeStream.format("console").option("truncate", 'true').start()
+
+    
+
+    # db_name = config.get("pgAdminAuth", "rdb_name")
+    
 
     # def func1(row):
     #     print(row)
     #     return row['converted_value'].split(':')
+    def write_to_postgres(df, batch_id):
+        config = configparser.ConfigParser()
+        config_path = "./configurations.ini"
+        config.read(os.path.expanduser(config_path))
+
+        dbHost = config.get("pgAdminAuth", "host")
+        dbPort = config.get("pgAdminAuth", "ort")
+        dbName = config.get("pgAdminAuth", "rdb_name")
+        dbUser = config.get("pgAdminAuth", "username")
+        dbPassword = config.get("pgAdminAuth", "password")
+        
+
+        url = "jdbc:postgresql://"+dbHost+":"+dbPort+"/"+dbName
+        properties = {
+        "driver": "org.postgresql.Driver",
+        "user": dbUser,
+        "password": dbPassword
+        }
+
+        df.write.jdbc(url=url, table="metrics", mode="append",
+                            properties=properties)
 
 
+    # def foreach_batch_func():
+    #     def _(df, epoch_id):
+    #         write_to_postgres(df)
+    #     return _
+
+    query = df.writeStream \
+    .outputMode("append") \
+    .foreachBatch(write_to_postgres) \
+    .option("truncate", 'true') \
+    .start() \
     # query = df.writeStream.foreach(func1).format("console").option("truncate", 'true').start()
     query.awaitTermination(5)
 
