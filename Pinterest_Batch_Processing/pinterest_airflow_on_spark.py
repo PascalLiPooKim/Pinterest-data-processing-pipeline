@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 
 
 if __name__ == "__main__":
+    
+    # Arguments for the DAG
     default_args = {
     'owner': 'Pascal',
     'depends_on_past': False,
@@ -24,42 +26,29 @@ if __name__ == "__main__":
     catchup=False,
     tags=['pyspark_scheduler']) as dag:
 
-        # bash_command = 'spark-submit --packages com.hortonworks:shc:1.0.0-1.6-s_2.10 \
-        # --repositories http://repo.hortonworks.com/content/groups/public/ \
-        # --files /home/aicore/hbase-2.4.9/conf/hbase-site.xml \
-        # /mnt/d/AiCore-perso/Projects/Pinterest-data-processing-pipeline/Pinterest_Batch_Processing/pinterest_s3_to_spark.py'
-
-        hbase_site = '/home/aicore/hbase-1.7.1/conf/hbase-site.xml'
-
-
+        # Run the script that create spark data frame from JSON files on AWS S3
         create_spark_df = '/home/aicore/AiCore/Pinterest-data-processing-pipeline/Pinterest_Batch_Processing/pinterest_s3_to_spark.py'  
-        # df_create_command = f'spark-submit --packages com.hortonworks:shc:1.0.0-1.6-s_2.10 \
-        # --repositories http://repo.hortonworks.com/content/groups/public/ \
-        # --files {hbase_site} {create_spark_df}'
         df_create_command = f'spark-submit {create_spark_df}'
         cretae_df_task = BashOperator(
         task_id='create_spark_df',
         bash_command=df_create_command,
         dag=dag)
 
+        # Run the script that store the Spark data frame to HBase
         write_df_to_hbase = '/home/aicore/AiCore/Pinterest-data-processing-pipeline/Pinterest_Batch_Processing/pinterest_df_spark_to_hbase.py'
-        store_df_command = f'spark-submit --packages com.hortonworks:shc:1.0.0-1.6-s_2.10 \
-        --repositories http://repo.hortonworks.com/content/groups/public/ \
-        --files {hbase_site} {write_df_to_hbase}'
+        df_hbase_store_command = f'spark-submit {write_df_to_hbase}'
         write_to_hbase_task = BashOperator(
-        task_id='create_spark_df',
-        bash_command=store_df_command,
+        task_id='store_df_to_hbase',
+        bash_command=df_hbase_store_command,
         dag=dag)
 
+        # Run the script that delete the JSON files from S3 bucket
         delete_s3_files = '/home/aicore/AiCore/Pinterest-data-processing-pipeline/Pinterest_Batch_Processing/pinterest_rm_files_from_s3.py'
         delete_files_command = f'python3 {delete_s3_files}'
         delete_s3_files_task = BashOperator(
         task_id='delete_s3_objects',
         bash_command=delete_files_command,
         dag=dag)
-        # choose_model = PythonOperator(
-        # task_id='choose_model',
-        # python_callable=choose_best_model
-        # )
+        
 
         create_spark_df >> write_df_to_hbase >> delete_s3_files

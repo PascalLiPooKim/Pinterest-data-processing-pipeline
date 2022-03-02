@@ -76,3 +76,8 @@ scrape_configs:
   - job_name: 'hbase'
     static_configs:
       - targets: ['localhost:7000']
+
+  # pgAdmin monitoring
+  - job_name: 'pgadmin'
+    static_configs:
+      - targets: ['localhost:9187']
