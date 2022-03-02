@@ -27,6 +27,8 @@ The data used during this project was obtained by scrapping the [Pinterest](http
 
 
 ## Requirements
+
+### Python
 The Python libraries that are required for the pipeline to work are:
 * apache-airflow
 * boto3
@@ -38,10 +40,21 @@ The Python libraries that are required for the pipeline to work are:
 * pyspark
 * happybase
 
-Apart from these Python modules, some folders which contain important dependencies need to be downloaded. Some of the files also will need to be configured. For this project, the folders downloaded are:
+### Folders
+Apart from these Python modules, some folders which contain important dependencies need to be downloaded. Some of the files also will need to be configured. For this project, the folders downloaded and used were:
 * hadoop-2.10.1
-* hbase-1.7.1
+* hbase-2.4.9
 * kafka_2.13-3.0.0
 * spark-3.2.1-bin-hadoop3.2
+* presto-server-0.270
 
 There are tutorials available online on how to configure each of the required files.
+
+
+### JAR Files
+
+To be able to connect **pyspark** with databases, the required JAR files will need to be downloaded and put in the *jars* folder in the *spark-3.2.1-bin-hadoop3.2* folder. The instructions to connect **spark** to **HBase** can be found at https://kontext.tech/column/spark/628/spark-connect-to-hbase. Moreover, all JAR files with the prefix ```hbase``` in the *lib* folder in the *hbase-2.4.9* folder need to be copied and pasted into the aforementioned folder. Regarding connecting **spark** to **pgAdmin**, the JAR file should be downloaded at https://jdbc.postgresql.org/download.html and in the code, the location of this JAR file needs to be specified.
+
+### Monitoring with Prometheus and Grafana
+
+Each of the two databases requires their own exporter in order for **Prometheus** to be able to listen to them. For **HBase**, the instructions and resources can be found at https://github.com/prometheus/jmx_exporter and that for **pgAdmin** is available at https://github.com/prometheus-community/postgres_exporter.
