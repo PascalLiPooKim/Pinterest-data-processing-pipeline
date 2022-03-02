@@ -85,7 +85,7 @@ if __name__ == '__main__':
     # col("key").cast("string"),
     # from_json(col("value").cast("string"), schema))
     df.printSchema()
-    sleep(5)
+    # sleep(5)
 
     # df.show()
     # schema = df.schema
@@ -138,6 +138,6 @@ if __name__ == '__main__':
 
 
     # query = df.writeStream.foreach(func1).format("console").option("truncate", 'true').start()
-    query.awaitTermination(5)
+    query.awaitTermination()
 
     # spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.13:3.2.1 org.apache.kafka:kafka-clients:3.0.0 pinterest_app_spark_streaming.py

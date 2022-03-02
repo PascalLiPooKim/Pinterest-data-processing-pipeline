@@ -10,6 +10,35 @@ from pyspark.sql.types import *
 from itertools import chain
 import configparser
 
+def selectCol(str, col):
+    return eval(str)[col]
+
+def splitUDF(col):
+    return udf(lambda x: selectCol(x, col), StringType())
+
+def write_to_postgres(df, batch_id):
+    config = configparser.ConfigParser()
+    config_path = "./configurations.ini"
+    config.read(os.path.expanduser(config_path))
+
+    dbHost = config.get("pgAdminAuth", "host")
+    dbPort = config.get("pgAdminAuth", "port")
+    dbName = config.get("pgAdminAuth", "rdb_name")
+    dbUser = config.get("pgAdminAuth", "username")
+    dbPassword = config.get("pgAdminAuth", "password")
+    # dbTable = config.get("pgAdminAuth", "table")
+    
+
+    url = "jdbc:postgresql://"+dbHost+":"+dbPort+"/"+dbName
+    properties = {
+    "driver": "org.postgresql.Driver",
+    "user": dbUser,
+    "password": dbPassword,
+    }
+
+    df.write.jdbc(url=url, table="pinterest", mode="append",
+                        properties=properties)
+
 
 
 if __name__ == '__main__':
@@ -27,7 +56,7 @@ if __name__ == '__main__':
         scala_version = '2.12'
         apache_version = '3.2.1'
         os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_{0}:{1}, \
-            pinterest_app_spark_streaming.py pyspark-shell'.format(scala_version, apache_version)
+            pinterest_app_spark_streaming_to_rdb.py pyspark-shell'.format(scala_version, apache_version)
     except:
         print("Packages not required or already downloaded")
 
@@ -66,7 +95,10 @@ if __name__ == '__main__':
     # .setAppName("PinterestApp")
     # ).getOrCreate()
 
-    spark = pyspark.sql.SparkSession.builder.appName("PinterestApp").getOrCreate()
+    spark = pyspark.sql.SparkSession.builder \
+    .appName("PinterestAppStreaming") \
+    .config("spark.jars", "/home/aicore/spark/spark-3.2.1-bin-hadoop3.2/jars/postgresql-42.3.3.jar") \
+    .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
 
@@ -77,6 +109,8 @@ if __name__ == '__main__':
     .option("subscribe", "ApiToKafkaTopic") \
     .option("startingOffsets", "earliest") \
     .load()
+    
+    # spark.stop()
 
     df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
     # df.show()
@@ -86,7 +120,7 @@ if __name__ == '__main__':
     # col("key").cast("string"),
     # from_json(col("value").cast("string"), schema))
     df.printSchema()
-    sleep(5)
+    # sleep(5)
 
     # df.show()
     # schema = df.schema
@@ -119,20 +153,24 @@ if __name__ == '__main__':
         'image_src',
         'follower_count']
 
-    def convertToDict(str, col):
-        return eval(str)[col]
+    # def convertToDict(str, col):
+    #     return eval(str)[col]
 
-    def splitUDF(col):
-        return udf(lambda x: convertToDict(x, col), StringType())
+    # def splitUDF(col):
+    #     return udf(lambda x: convertToDict(x, col), StringType())
+    
     # schema = StructType([StructField('data', MapType(StringType(), StringType()))])
     # df = df.withColumn('category', from_json(df.converted_value, schema))
 
     # -----------
     for i in range(len(cols)):
         df = df.withColumn(cols[i], splitUDF(cols[i])(col('converted_value')))
-    df = df.select('index', 'category', 'unique_id', 'description')
+        
+    df = df.select('index', 'unique_id', 'category', 'title', 'description')
     # query = df.writeStream.format("console").option("truncate", 'true').start()
-
+    df.printSchema()
+    print('Working')
+    
     
 
     # db_name = config.get("pgAdminAuth", "rdb_name")
@@ -141,27 +179,29 @@ if __name__ == '__main__':
     # def func1(row):
     #     print(row)
     #     return row['converted_value'].split(':')
-    def write_to_postgres(df, batch_id):
-        config = configparser.ConfigParser()
-        config_path = "./configurations.ini"
-        config.read(os.path.expanduser(config_path))
+    
+    
+    # def write_to_postgres(df, batch_id):
+    #     config = configparser.ConfigParser()
+    #     config_path = "./configurations.ini"
+    #     config.read(os.path.expanduser(config_path))
 
-        dbHost = config.get("pgAdminAuth", "host")
-        dbPort = config.get("pgAdminAuth", "ort")
-        dbName = config.get("pgAdminAuth", "rdb_name")
-        dbUser = config.get("pgAdminAuth", "username")
-        dbPassword = config.get("pgAdminAuth", "password")
+    #     dbHost = config.get("pgAdminAuth", "host")
+    #     dbPort = config.get("pgAdminAuth", "port")
+    #     dbName = config.get("pgAdminAuth", "rdb_name")
+    #     dbUser = config.get("pgAdminAuth", "username")
+    #     dbPassword = config.get("pgAdminAuth", "password")
         
 
-        url = "jdbc:postgresql://"+dbHost+":"+dbPort+"/"+dbName
-        properties = {
-        "driver": "org.postgresql.Driver",
-        "user": dbUser,
-        "password": dbPassword
-        }
+    #     url = "jdbc:postgresql://"+dbHost+":"+dbPort+"/"+dbName
+    #     properties = {
+    #     "driver": "org.postgresql.Driver",
+    #     "user": dbUser,
+    #     "password": dbPassword
+    #     }
 
-        df.write.jdbc(url=url, table="metrics", mode="append",
-                            properties=properties)
+    #     df.write.jdbc(url=url, table="metrics", mode="append",
+    #                         properties=properties)
 
 
     # def foreach_batch_func():
@@ -173,8 +213,8 @@ if __name__ == '__main__':
     .outputMode("append") \
     .foreachBatch(write_to_postgres) \
     .option("truncate", 'true') \
-    .start() \
+    .start()
     # query = df.writeStream.foreach(func1).format("console").option("truncate", 'true').start()
-    query.awaitTermination(5)
-
+    query.awaitTermination()
+    # spark.stop()
     # spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.13:3.2.1 org.apache.kafka:kafka-clients:3.0.0 pinterest_app_spark_streaming.py
