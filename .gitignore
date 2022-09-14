@@ -1,0 +1,5 @@
+credentials
+read_aws_credentials_locally.py
+personal_access_token.txt
+configurations.ini
+generate_config.py
